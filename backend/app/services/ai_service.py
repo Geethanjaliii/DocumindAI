@@ -14,6 +14,7 @@ Key decisions:
 import json
 import logging
 import os
+import re
 
 from dotenv import load_dotenv
 
@@ -25,102 +26,19 @@ import google.genai as genai
 import google.genai.types as gtypes
 
 from app.db.models.enums import DocumentType
+from app.services.extraction_schemas import empty_extraction, get_extraction_schema
 
 logger = logging.getLogger(__name__)
 
 _MODEL_NAME = "gemini-2.5-flash"
-
-# ---------------------------------------------------------------------------
-# Per-type extraction schemas
-# Field names are intentionally stable — duplicate detection relies on
-# extracted_json["invoice_number"] and extracted_json["vendor_name"] via
-# ExtractionRepository.find_by_invoice_number_and_vendor().
-# ---------------------------------------------------------------------------
-_EXTRACTION_SCHEMAS: dict[DocumentType, dict[str, Any]] = {
-    DocumentType.INVOICE: {
-        "invoice_number": "string — invoice identifier",
-        "invoice_date": "string — ISO 8601 date or as printed",
-        "due_date": "string — payment due date, or null",
-        "vendor_name": "string — seller / issuing company",
-        "vendor_address": "string — seller address, or null",
-        "vendor_tax_id": "string — VAT / GST / tax ID, or null",
-        "customer_name": "string — buyer name, or null",
-        "customer_address": "string — buyer address, or null",
-        "line_items": [
-            {
-                "description": "string",
-                "quantity": "number or null",
-                "unit_price": "number or null",
-                "total": "number or null",
-            }
-        ],
-        "subtotal": "number or null",
-        "tax_amount": "number or null",
-        "tax_rate": "number — percentage e.g. 18 for 18%, or null",
-        "total_amount": "number — grand total",
-        "currency": "string — ISO 4217 e.g. USD, INR",
-        "payment_terms": "string or null",
-        "notes": "string or null",
-    },
-    DocumentType.RECEIPT: {
-        "receipt_number": "string or null",
-        "receipt_date": "string — ISO 8601 date or as printed",
-        "merchant_name": "string — store or business name",
-        "merchant_address": "string or null",
-        "line_items": [
-            {
-                "description": "string",
-                "quantity": "number or null",
-                "unit_price": "number or null",
-                "total": "number or null",
-            }
-        ],
-        "subtotal": "number or null",
-        "tax_amount": "number or null",
-        "total_amount": "number — amount paid",
-        "currency": "string — ISO 4217",
-        "payment_method": "string — cash / card / UPI etc, or null",
-        "card_last4": "string — last 4 digits if card, else null",
-    },
-    DocumentType.PURCHASE_ORDER: {
-        "po_number": "string — purchase order number",
-        "po_date": "string — ISO 8601 date or as printed",
-        "delivery_date": "string — expected delivery date, or null",
-        "buyer_name": "string — issuing company",
-        "buyer_address": "string or null",
-        "vendor_name": "string — supplier / seller",
-        "vendor_address": "string or null",
-        "line_items": [
-            {
-                "description": "string",
-                "quantity": "number or null",
-                "unit_price": "number or null",
-                "total": "number or null",
-            }
-        ],
-        "subtotal": "number or null",
-        "tax_amount": "number or null",
-        "total_amount": "number — order total",
-        "currency": "string — ISO 4217",
-        "payment_terms": "string or null",
-        "shipping_terms": "string or null",
-        "notes": "string or null",
-    },
-    DocumentType.OTHER: {
-        "title": "string — document title or best description",
-        "date": "string — primary date on document, or null",
-        "issuer": "string — issuing entity, or null",
-        "recipient": "string — recipient, or null",
-        "summary": "string — one-sentence summary of document content",
-        "key_values": "object — any notable key-value pairs extracted",
-    },
-}
 
 # Shared generation config — JSON mode + thinking disabled
 _JSON_CONFIG = gtypes.GenerateContentConfig(
     response_mime_type="application/json",
     thinking_config=gtypes.ThinkingConfig(thinking_budget=0),
 )
+
+_MARKDOWN_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE | re.MULTILINE)
 
 
 def _safe_confidence(value: Any, default: float = 0.75) -> float:
@@ -129,6 +47,71 @@ def _safe_confidence(value: Any, default: float = 0.75) -> float:
         return max(0.0, min(1.0, float(value)))
     except (TypeError, ValueError):
         return default
+
+
+def _parse_json_response(raw: str) -> dict[str, Any]:
+    """
+    Parse Gemini JSON output safely.
+
+    Strips optional markdown fences as a fallback even though JSON mode should
+    prevent them. Returns {} on empty or malformed input.
+    """
+    if not raw or not raw.strip():
+        return {}
+
+    text = _MARKDOWN_FENCE_RE.sub("", raw.strip()).strip()
+    if not text:
+        return {}
+
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _normalize_extracted_fields(
+    payload: dict[str, Any],
+    document_type: DocumentType,
+) -> dict[str, str]:
+    """Coerce extracted values to strings and restrict to known schema keys."""
+    schema = get_extraction_schema(document_type)
+    normalized = empty_extraction(document_type)
+
+    for key in schema:
+        value = payload.get(key)
+        if value is None:
+            normalized[key] = ""
+        else:
+            normalized[key] = str(value).strip()
+    return normalized
+
+
+def _build_field_confidences(
+    raw_confidences: Any,
+    schema: dict[str, str],
+    extracted_json: dict[str, str],
+) -> dict[str, float]:
+    """Ensure one confidence value exists for every schema field."""
+    source = raw_confidences if isinstance(raw_confidences, dict) else {}
+    field_confidences: dict[str, float] = {}
+
+    for key in schema:
+        if key in source:
+            field_confidences[key] = _safe_confidence(source[key], default=0.0)
+        elif extracted_json.get(key):
+            field_confidences[key] = 0.5
+        else:
+            field_confidences[key] = 0.0
+
+    return field_confidences
+
+
+def _average_confidence(field_confidences: dict[str, float]) -> float:
+    if not field_confidences:
+        return 0.0
+    return sum(field_confidences.values()) / len(field_confidences)
 
 
 class AIService:
@@ -149,11 +132,13 @@ class AIService:
             raise EnvironmentError("GEMINI_API_KEY environment variable is not set")
         self._client = genai.Client(api_key=api_key)
 
-    def _generate(self, prompt: str) -> dict:
+    def _generate(self, prompt: str) -> tuple[dict[str, Any], str]:
         """
         Call Gemini with JSON mode enabled.
-        Returns a parsed dict, or {} on any failure.
+
+        Returns (parsed_dict, raw_text). parsed_dict is {} on any failure.
         """
+        raw = ""
         try:
             response = self._client.models.generate_content(
                 model=_MODEL_NAME,
@@ -162,13 +147,13 @@ class AIService:
             )
             raw = response.text or ""
             logger.debug("Gemini raw response (%.300s)", raw)
-            return json.loads(raw)
+            return _parse_json_response(raw), raw
         except json.JSONDecodeError as exc:
             logger.warning("Gemini JSON decode failed: %s — raw: %.300s", exc, raw)
-            return {}
+            return {}, raw
         except Exception as exc:
             logger.exception("Gemini API call failed: %s", exc)
-            return {}
+            return {}, raw
 
     # ---------------------------------------------------------------------- #
     # Classification                                                           #
@@ -204,7 +189,7 @@ Respond with a JSON object containing exactly these fields:
 Document text (first 5000 chars):
 {raw_text[:5000]}
 """
-        data = self._generate(prompt)
+        data, _ = self._generate(prompt)
 
         label = str(data.get("document_type", "")).strip().lower()
         mapping: dict[str, DocumentType] = {
@@ -240,11 +225,14 @@ Document text (first 5000 chars):
             field_confidences  — stored in extractions.field_confidences
             overall_confidence — stored in extractions.overall_confidence
         """
-        if not raw_text or not raw_text.strip():
-            logger.warning("AI extract — empty text; returning empty extraction")
-            return {}, {}, 0.0
+        schema = get_extraction_schema(document_type)
+        logger.info("AI extract — extraction started doc_type=%s", document_type)
 
-        schema = _EXTRACTION_SCHEMAS.get(document_type, _EXTRACTION_SCHEMAS[DocumentType.OTHER])
+        if not raw_text or not raw_text.strip():
+            logger.warning("AI extract — extraction failed doc_type=%s reason=empty_text", document_type)
+            field_confidences = {key: 0.0 for key in schema}
+            return empty_extraction(document_type), field_confidences, 0.0
+
         schema_str = json.dumps(schema, indent=2)
 
         prompt = f"""You are a document data extraction expert.
@@ -252,16 +240,15 @@ Document text (first 5000 chars):
 Extract structured data from the document below according to the schema provided.
 
 Rules:
-- Use null for any field not present in the document. Do not invent data.
-- Numeric fields (amounts, quantities) must be numbers, not strings.
-- Dates should be returned exactly as printed if not ISO 8601.
-- Populate field_confidences with a 0.0-1.0 float for each top-level field.
-- Set overall_confidence (0.0-1.0) to your overall extraction quality assessment.
+- Return valid JSON only. Do not wrap the response in markdown or code fences.
+- All extracted field values must be strings. Use an empty string for missing fields.
+- Do not invent data that is not present in the document.
+- Populate field_confidences with a 0.0-1.0 float for each schema field.
+- Dates and amounts should be copied exactly as they appear on the document.
 
 Respond with a JSON object containing exactly these top-level keys:
-  extracted          : object matching the schema below
-  field_confidences  : object mapping each field name to a confidence float
-  overall_confidence : float from 0.0 to 1.0
+  extracted          : object with the schema fields below
+  field_confidences  : object mapping each schema field name to a confidence float
 
 Schema for document type "{document_type.value}":
 {schema_str}
@@ -269,31 +256,35 @@ Schema for document type "{document_type.value}":
 Document text (first 8000 chars):
 {raw_text[:8000]}
 """
-        data = self._generate(prompt)
+        data, raw = self._generate(prompt)
 
-        # Pull structured sub-keys
-        extracted_json: dict = {}
-        field_confidences: dict = {}
+        if not data:
+            logger.error(
+                "AI extract — extraction failed doc_type=%s reason=malformed_or_empty_json raw=%.300s",
+                document_type,
+                raw,
+            )
+            field_confidences = {key: 0.0 for key in schema}
+            return empty_extraction(document_type), field_confidences, 0.0
 
         if isinstance(data.get("extracted"), dict):
-            extracted_json = data["extracted"]
+            extracted_payload = data["extracted"]
         else:
-            # Gemini returned a flat dict — treat whole response as extracted payload
             excluded = {"field_confidences", "overall_confidence"}
-            extracted_json = {k: v for k, v in data.items() if k not in excluded}
+            extracted_payload = {k: v for k, v in data.items() if k not in excluded}
 
-        if isinstance(data.get("field_confidences"), dict):
-            field_confidences = {
-                k: _safe_confidence(v) for k, v in data["field_confidences"].items()
-            }
-
-        overall_confidence = _safe_confidence(
-            data.get("overall_confidence"),
-            default=0.75 if extracted_json else 0.0,
+        extracted_json = _normalize_extracted_fields(extracted_payload, document_type)
+        field_confidences = _build_field_confidences(
+            data.get("field_confidences"),
+            schema,
+            extracted_json,
         )
+        overall_confidence = _average_confidence(field_confidences)
 
         logger.info(
-            "AI extract — doc_type=%s fields=%d overall_confidence=%.3f",
-            document_type, len(extracted_json), overall_confidence,
+            "AI extract — extraction completed doc_type=%s fields=%d overall_confidence=%.3f",
+            document_type,
+            len(extracted_json),
+            overall_confidence,
         )
         return extracted_json, field_confidences, overall_confidence
