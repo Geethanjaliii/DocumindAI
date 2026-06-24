@@ -1,28 +1,47 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, Query, UploadFile, status
 
 from app.core.deps import CurrentUser, DbSession
 from app.db.models.enums import DocumentStatus, DocumentType
 from app.schemas.document import (
+    DocumentBulkUploadResponse,
     DocumentDetailWrapper,
     DocumentEventsResponse,
     DocumentListResponse,
-    DocumentUploadResponse,
 )
 from app.services.document_service import DocumentService
 
 router = APIRouter()
 
 
-@router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_202_ACCEPTED)
-async def upload_document(
+@router.post("/upload", response_model=DocumentBulkUploadResponse, status_code=status.HTTP_202_ACCEPTED)
+async def upload_documents(
     current_user: CurrentUser,
     db: DbSession,
     background_tasks: BackgroundTasks,
-    file: UploadFile,
-) -> DocumentUploadResponse:
-    return await DocumentService(db).upload_document(current_user, file, background_tasks)
+    files: Annotated[
+        list[UploadFile],
+        File(description="One or more documents to upload (PDF, PNG, or JPEG)"),
+    ] = [],
+    file: Annotated[
+        UploadFile | None,
+        File(
+            description="Legacy single-file upload field (use `files` for new clients)",
+            include_in_schema=False,
+        ),
+    ] = None,
+) -> DocumentBulkUploadResponse:
+    upload_files = list(files)
+    if file is not None:
+        upload_files.append(file)
+
+    return await DocumentService(db).upload_documents(
+        current_user,
+        upload_files,
+        background_tasks,
+    )
 
 
 @router.get("", response_model=DocumentListResponse)

@@ -114,6 +114,11 @@ class DocumentUploadResponse(BaseModel):
     data: DocumentSummaryResponse
 
 
+class DocumentBulkUploadResponse(BaseModel):
+    uploaded_count: int
+    document_ids: list[UUID]
+
+
 class DocumentListResponse(BaseModel):
     data: list[DocumentSummaryResponse]
     pagination: PaginationMeta

@@ -9,13 +9,13 @@ from app.db.models.user import User
 from app.repositories.document_event_repository import DocumentEventRepository
 from app.repositories.document_repository import DocumentRepository
 from app.schemas.document import (
+    DocumentBulkUploadResponse,
     DocumentDetailResponse,
     DocumentDetailWrapper,
     DocumentEventsResponse,
     DocumentEventResponse,
     DocumentListResponse,
     DocumentSummaryResponse,
-    DocumentUploadResponse,
     PaginationMeta,
 )
 from app.services.storage_service import StorageService
@@ -31,12 +31,12 @@ class DocumentService:
         self.storage = StorageService()
         self.settings = get_settings()
 
-    async def upload_document(
+    async def _create_document_from_upload(
         self,
         user: User,
         file: UploadFile,
         background_tasks: BackgroundTasks,
-    ) -> DocumentUploadResponse:
+    ) -> UUID:
         if file.filename is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required")
 
@@ -91,8 +91,28 @@ class DocumentService:
             document.id,
         )
 
-        return DocumentUploadResponse(
-            data=DocumentSummaryResponse.model_validate(document)
+        return document.id
+
+    async def upload_documents(
+        self,
+        user: User,
+        files: list[UploadFile],
+        background_tasks: BackgroundTasks,
+    ) -> DocumentBulkUploadResponse:
+        if not files:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one file is required",
+            )
+
+        document_ids: list[UUID] = []
+        for file in files:
+            document_id = await self._create_document_from_upload(user, file, background_tasks)
+            document_ids.append(document_id)
+
+        return DocumentBulkUploadResponse(
+            uploaded_count=len(document_ids),
+            document_ids=document_ids,
         )
 
     def list_documents(

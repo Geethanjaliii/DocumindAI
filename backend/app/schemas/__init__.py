@@ -8,6 +8,7 @@ from app.schemas.dashboard import (
 )
 from app.schemas.document import (
     ClassificationResponse,
+    DocumentBulkUploadResponse,
     DocumentDetailResponse,
     DocumentDetailWrapper,
     DocumentEventResponse,
@@ -44,6 +45,7 @@ __all__ = [
     "DocumentEventsResponse",
     "DocumentListResponse",
     "DocumentSummaryResponse",
+    "DocumentBulkUploadResponse",
     "DocumentUploadResponse",
     "ExtractionResponse",
     "OcrResultResponse",
