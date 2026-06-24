@@ -9,6 +9,7 @@ from app.repositories.document_repository import DocumentRepository
 from app.repositories.extraction_repository import ExtractionRepository
 from app.repositories.ocr_repository import OcrResultRepository
 from app.services.ai_service import AIService
+from app.services.duplicate_service import DuplicateService
 from app.services.ocr_service import OcrService
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,25 @@ def enqueue_document_processing(document_id: UUID) -> None:
                     event_type=DocumentEventType.EXTRACTED,
                     metadata={"overall_confidence": overall_confidence},
                 )
+                document_repo.commit()
+
+                duplicate_result = DuplicateService(db).detect_for_document(
+                    user_id=document.user_id,
+                    document_id=document.id,
+                    document_type=doc_type,
+                    extracted_json=extracted_json,
+                )
+                if duplicate_result.is_duplicate:
+                    print(
+                        f"DUPLICATE DETECTED — document_id={document.id} "
+                        f"original_document_id={duplicate_result.original_document_id}"
+                    )
+                    logger.info(
+                        "DUPLICATE DETECTED — document_id=%s original_document_id=%s matches=%d",
+                        document.id,
+                        duplicate_result.original_document_id,
+                        duplicate_result.match_count,
+                    )
                 document_repo.commit()
 
             except NotImplementedError:

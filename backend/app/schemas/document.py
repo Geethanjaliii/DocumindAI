@@ -73,6 +73,8 @@ class DocumentSummaryResponse(BaseModel):
     document_type: DocumentType | None
     page_count: int
     error_message: str | None
+    is_duplicate: bool = False
+    original_document_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
     processed_at: datetime | None

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -44,8 +44,18 @@ class Document(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    original_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     user: Mapped["User"] = relationship(back_populates="documents")
+    original_document: Mapped["Document | None"] = relationship(
+        remote_side="Document.id",
+        foreign_keys=[original_document_id],
+    )
     ocr_result: Mapped["OcrResult | None"] = relationship(
         back_populates="document", uselist=False, cascade="all, delete-orphan"
     )

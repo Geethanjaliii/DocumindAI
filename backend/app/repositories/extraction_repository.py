@@ -44,6 +44,7 @@ class ExtractionRepository(BaseRepository[Extraction]):
             select(Extraction)
             .join(Document, Document.id == Extraction.document_id)
             .where(Document.user_id == user_id)
+            .order_by(Document.created_at.asc())
         )
         if exclude_document_id is not None:
             stmt = stmt.where(Document.id != exclude_document_id)

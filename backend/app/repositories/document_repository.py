@@ -98,6 +98,18 @@ class DocumentRepository(BaseRepository[Document]):
         self.db.flush()
         return document
 
+    def update_duplicate_status(
+        self,
+        document: Document,
+        *,
+        is_duplicate: bool,
+        original_document_id: UUID | None,
+    ) -> Document:
+        document.is_duplicate = is_duplicate
+        document.original_document_id = original_document_id
+        self.db.flush()
+        return document
+
     def search_for_user(
         self,
         user_id: UUID,
