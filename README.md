@@ -1,229 +1,368 @@
-# DocuMind AI
+# DocuMind AI – Enterprise Document Intelligence & Extraction Platform
 
-AI-powered document intelligence platform that automates OCR, document classification, structured data extraction, duplicate detection, search, and analytics.
-
-## Overview
-
-DocuMind AI helps organizations process large volumes of documents by extracting meaningful information using OCR and AI-powered analysis.
-
-The platform supports document ingestion, classification, structured field extraction, duplicate invoice detection, document search, and analytics through a modern dashboard.
+DocuMind AI is an AI-powered enterprise document intelligence platform that automates document ingestion, OCR extraction, document classification, duplicate detection, and analytics. The platform transforms unstructured business documents into searchable, actionable intelligence through an interactive dashboard and real-time insights.
 
 ---
 
-## Features
+## 🚀 Features
 
-### Document Processing
-- Multi-file document upload
-- OCR text extraction
-- PDF and image document support
-- Document reprocessing
+### 📄 AI-Powered OCR Extraction
+- Extract text and structured fields from invoices, receipts, purchase orders, and business documents
+- High-accuracy OCR pipeline for scanned and digital documents
+- Automated field extraction and metadata generation
 
-### AI-Powered Classification
-- Invoice classification
-- Receipt classification
-- Purchase Order classification
-- Other document detection
+### 🧠 Intelligent Document Classification
+- Automatically classify uploaded documents into categories
+- AI-assisted extraction and categorization pipeline
+- Supports invoices, receipts, purchase orders, and custom document types
 
-### Structured Data Extraction
-Extracts key fields such as:
-- Vendor Name
-- Invoice Number
-- Invoice Date
-- Total Amount
-- Currency
-- Due Date
+### 🔍 Duplicate Detection Engine
+- Detect duplicate invoices and receipts
+- Invoice number matching
+- Vendor similarity detection
+- Duplicate confidence scoring
+- Fraud prevention workflows
 
-### Duplicate Detection
-- Detect duplicate invoices
-- Match based on invoice metadata
-- Duplicate management workflow
+### 📑 Document Management Console
+- View processed documents
+- Search and filter documents
+- Metadata management
+- Processing status tracking
+- Document lifecycle management
 
-### Search & Management
-- Document search
-- Filtering by type
-- Status tracking
-- Document history
+### 📊 Real-Time Analytics Dashboard
+- Field extraction accuracy metrics
+- OCR confidence scores
+- Processing latency monitoring
+- Success ratio tracking
+- Operational insights and reporting
 
-### Analytics Dashboard
-- Total documents processed
-- Document type distribution
-- Recent uploads
-- Duplicate statistics
-- Processing insights
-
-### Authentication
-- JWT Authentication
-- Secure API access
-- User-specific document management
+### 📱 Responsive Enterprise Dashboard
+- Fully responsive UI
+- Mobile, tablet, and desktop support
+- Modern dashboard interface
+- Real-time data visualization
 
 ---
 
-## Architecture
+# 🛠️ Tech Stack
 
-```text
-                ┌───────────────┐
-                │ React Frontend│
-                └───────┬───────┘
-                        │
-                        ▼
-                ┌───────────────┐
-                │ FastAPI Backend│
-                └───────┬───────┘
-                        │
-        ┌───────────────┼───────────────┐
-        ▼                               ▼
- ┌─────────────┐                 ┌─────────────┐
- │ Gemini AI   │                 │ PostgreSQL  │
- │ Classification & Extraction   │ Database    │
- └─────────────┘                 └─────────────┘
-                        │
-                        ▼
-                 ┌──────────┐
-                 │ Tesseract│
-                 │ OCR      │
-                 └──────────┘
+## Frontend
+- **Framework:** React.js + TypeScript + Vite
+- **Styling:** Tailwind CSS
+- **Charts:** Recharts
+- **State Management:** React Hooks & Context API
+- **Icons:** Lucide React
+
+## Backend
+- **Framework:** FastAPI (Python 3.11)
+- **Database:** PostgreSQL
+- **ORM:** SQLAlchemy
+- **Authentication:** JWT Authentication
+- **AI Services:** Gemini AI APIs
+- **OCR Engine:** Document OCR & Information Extraction Pipeline
+
+---
+
+# 📐 Architecture Diagram
+
+```mermaid
+graph TD
+    User[👤 User Browser]
+
+    FE[⚛️ React + TypeScript Frontend]
+    API[⚡ FastAPI Backend]
+
+    Auth[🔐 JWT Authentication]
+    OCR[📄 OCR Extraction Engine]
+    AI[🧠 Gemini AI Services]
+    Dup[🔍 Duplicate Detection Engine]
+    Analytics[📊 Analytics Service]
+
+    DB[(🐘 PostgreSQL Database)]
+
+    User --> FE
+    FE -->|REST API Requests| API
+
+    API --> Auth
+    API --> OCR
+    API --> AI
+    API --> Dup
+    API --> Analytics
+
+    OCR --> DB
+    AI --> DB
+    Dup --> DB
+    Analytics --> DB
+
+    API --> DB
+    API --> FE
 ```
 
 ---
 
-## Tech Stack
+# 🔄 Document Processing Flow
 
-### Frontend
-- React
-- TypeScript
-- Vite
-- Vanilla CSS
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as React Frontend
+    participant A as FastAPI Backend
+    participant O as OCR Engine
+    participant G as Gemini AI
+    participant D as PostgreSQL
 
-### Backend
-- FastAPI
-- Python
-- SQLAlchemy
-- Alembic
+    U->>F: Upload Document
+    F->>A: POST /documents/upload
+    A->>O: Extract Text & Fields
+    O-->>A: Structured Data
+    A->>G: Classify Document
+    G-->>A: Category + Metadata
+    A->>D: Store Results
+    D-->>A: Persisted Records
+    A-->>F: Extraction Results
+    F-->>U: Dashboard & Analytics
+```
 
-### Database
+---
+
+# 🚀 Core Modules
+
+## 📄 Document Upload
+- Drag-and-drop uploads
+- PDF and image support
+- Batch upload capabilities
+- Upload progress tracking
+
+## 📑 Document Management
+- View processed documents
+- Search and filtering
+- Metadata management
+- Processing status tracking
+
+## 🔍 Duplicate Detection
+- Invoice number matching
+- Vendor similarity detection
+- Duplicate confidence scoring
+- Fraud prevention workflows
+
+## 📊 Analytics Dashboard
+- Extraction accuracy monitoring
+- OCR confidence tracking
+- Processing latency analysis
+- Success ratio monitoring
+- Operational reporting
+
+---
+
+# 📸 Application Screenshots
+
+## Landing Page
+![Landing Page](docs/screenshots/demo_screenshots/Landing-page.png)
+
+## Authentication
+![Authentication](docs/screenshots/demo_screenshots/authentication.png)
+
+## Dashboard Overview
+![Dashboard](docs/screenshots/demo_screenshots/Dashboard-overview.png)
+
+## Document Upload
+![Document Upload](docs/screenshots/demo_screenshots/document-upload.png)
+
+## Documents Management
+![Documents Management](docs/screenshots/demo_screenshots/documents-Management.png)
+
+## Duplicate Detection
+![Duplicate Detection](docs/screenshots/demo_screenshots/Duplicate-detection.png)
+
+## Analytics Dashboard
+![Analytics Dashboard](docs/screenshots/demo_screenshots/analytics-metrics.png)
+
+---
+
+# 📦 Installation & Configuration
+
+## Prerequisites
+- Python 3.11+
+- Node.js 18+
 - PostgreSQL
-- Neon
-
-### AI & OCR
-- Google Gemini 2.5 Flash
-- Tesseract OCR
-
-### Authentication
-- JWT Authentication
-
-### Version Control
-- Git
-- GitHub
+- Gemini API Key
 
 ---
 
-## Project Structure
+# 1️⃣ Backend Setup
 
-```text
-DocumindAI
-│
-├── backend
-│   ├── app
-│   │   ├── api
-│   │   ├── services
-│   │   ├── schemas
-│   │   ├── repositories
-│   │   ├── db
-│   │   └── workers
-│   │
-│   └── migrations
-│
-├── frontend
-│   ├── src
-│   │   ├── components
-│   │   ├── services
-│   │   ├── assets
-│   │   └── screens
-│   │
-│   └── public
-│
-└── README.md
+```bash
+cd backend
+
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# Linux/Mac
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+Create a `.env` file:
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+SECRET_KEY=your_secret_key
+GEMINI_API_KEY=your_gemini_api_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+
+Run the server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Backend URL:
+
+```
+http://127.0.0.1:8000
+```
+
+Swagger Documentation:
+
+```
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-## API Modules
+# 2️⃣ Frontend Setup
 
-### Documents
-- Upload documents
-- List documents
-- Get document details
-- Delete documents
-- Reprocess documents
+```bash
+cd frontend
 
-### Search
-- Search documents
-- Filter results
+npm install
+npm run dev
+```
 
-### Duplicates
-- List duplicate matches
-- Update duplicate status
+Frontend URL:
 
-### Dashboard
-- Statistics
-- Recent documents
-- Analytics data
-
-### Authentication
-- Register
-- Login
-- JWT token validation
+```
+http://localhost:3000
+```
 
 ---
 
-## Screens
+# 📡 API Endpoints
 
-- Dashboard
-- Document Upload
-- Documents Management
-- Document Details
-- Duplicate Detection
-- Analytics
-- Search
-- Login
-- Registration
+## Authentication
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /users/me`
 
----
+## Document Operations
+- `POST /api/v1/documents/upload`
+- `GET /api/v1/documents`
+- `GET /api/v1/documents/{id}`
+- `DELETE /api/v1/documents/{id}`
 
-## Sample Workflow
+## Duplicate Detection
+- `GET /api/v1/duplicates`
+- `POST /api/v1/duplicates/analyze`
 
-1. Upload invoice PDF
-2. OCR extracts text
-3. Gemini classifies document
-4. Structured fields extracted
-5. Duplicate check performed
-6. Results stored in PostgreSQL
-7. Dashboard updated automatically
+## Analytics
+- `GET /api/v1/stats`
+- `GET /api/v1/search`
 
 ---
 
-## Future Improvements
+# 🛡️ Environment Variables
 
-- RAG-based document Q&A
-- Role-based access control
-- Vector search
-- Email ingestion
-- Cloud deployment
-- Webhook integrations
-- Export to Excel/CSV
-- Audit logs
+## Backend (`backend/.env`)
+
+```env
+DATABASE_URL=
+SECRET_KEY=
+GEMINI_API_KEY=
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+
+## Frontend (`frontend/.env`)
+
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
 
 ---
 
-## Author
+# 🌐 Deployment Guide
+
+## Backend
+
+```bash
+docker build -t documind-backend .
+docker run -p 8000:8000 documind-backend
+```
+
+Deployment Platforms:
+- Render
+- Railway
+- AWS ECS
+- Google Cloud Run
+
+## Frontend
+
+```bash
+npm run build
+```
+
+Deployment Platforms:
+- Vercel
+- Netlify
+- AWS Amplify
+
+---
+
+# 🔮 Future Enhancements
+
+- Role-Based Access Control (RBAC)
+- Vector Search for Semantic Document Retrieval
+- RAG-Powered Document Question Answering
+- Real-Time Processing Queues using Celery and Redis
+- Multi-Tenant Enterprise Workspaces
+- Cloud Storage Integration (AWS S3 / GCS)
+- CI/CD Pipeline with GitHub Actions
+- Docker Compose and Kubernetes Deployment
+- AI-Powered Document Summarization
+- Document Chat Assistant
+
+---
+
+# 📈 Project Highlights
+
+- AI-Powered Enterprise Document Intelligence Platform
+- End-to-End OCR Extraction Pipeline
+- Duplicate Invoice Detection System
+- Real-Time Analytics Dashboard
+- FastAPI + React Full-Stack Architecture
+- Gemini AI Integration
+- Responsive Enterprise UI
+- Production-Ready Modular Architecture
+
+---
+
+# ✍️ Author
 
 **Geethanjali V N**
 
-Computer Science Engineering Student  
-Velammal Engineering College
+GitHub: https://github.com/Geethanjaliii
+
+Project Repository:
+https://github.com/Geethanjaliii/DocumindAI
 
 ---
 
-## License
+# 📄 License
 
-This project is developed for educational purposes.
+This project is licensed under the MIT License.
