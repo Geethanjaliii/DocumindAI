@@ -157,9 +157,6 @@ sequenceDiagram
 
 # 📸 Application Screenshots
 
-## Landing Page
-![Landing Page](docs/screenshots/demo_screenshots/Landing-page.png)
-
 ## Authentication
 ![Authentication](docs/screenshots/demo_screenshots/authentication.png)
 
