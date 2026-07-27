@@ -42,7 +42,6 @@ DocuMind AI is an AI-powered enterprise document intelligence platform that auto
 - Modern dashboard interface
 - Real-time data visualization
 
----
 
 # 🛠️ Tech Stack
 
