@@ -2,7 +2,6 @@
 
 DocuMind AI is an AI-powered enterprise document intelligence platform that automates document ingestion, OCR extraction, document classification, duplicate detection, and analytics. The platform transforms unstructured business documents into searchable, actionable intelligence through an interactive dashboard and real-time insights.
 
----
 
 ## 🚀 Features
 
