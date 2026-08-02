@@ -17,7 +17,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 
 # ----------------------------------------------------
 # Tesseract binary resolution — platform-aware, fails fast at import time
-# ----------------------------------------------------------
+# --------------------------------------------------------
 if sys.platform == "win32":
     _win_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
     pytesseract.pytesseract.tesseract_cmd = _win_path
