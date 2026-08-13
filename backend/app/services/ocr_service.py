@@ -15,7 +15,7 @@ from pdf2image.exceptions import (
 )
 from PIL import Image, ImageEnhance, ImageFilter
 
-# -----------------------------------------
+# ---------------------------------------
 # Tesseract binary resolution — platform-aware, fails fast at import time
 # ------------------------------------------
 if sys.platform == "win32":
